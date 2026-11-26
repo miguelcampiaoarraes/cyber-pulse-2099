@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CYBER PULSE 2099: NEON VANGUARD</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Orbitron:wght@400;600;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Background Canvas for Game -->
+  <canvas id="game-canvas"></canvas>
+
+  <!-- CRT Overlay (Toggleable) -->
+  <div id="crt-overlay" class="crt"></div>
+
+  <!-- HUD Overlay -->
+  <div id="hud" class="ui-layer hidden">
+    <!-- Top Bar -->
+    <div class="hud-top">
+      <div class="hud-box">
+        <span class="label">SCORE</span>
+        <span id="hud-score" class="value glow-cyan">000000</span>
+      </div>
+
+      <div class="hud-box center-box">
+        <span class="label">ONDA</span>
+        <span id="hud-wave" class="value glow-magenta">1</span>
+      </div>
+
+      <div class="hud-box">
+        <span class="label">CYBER CORES</span>
+        <span id="hud-cores" class="value glow-gold">💎 0</span>
+      </div>
+    </div>
+
+    <!-- Combo & Overdrive Gauge -->
+    <div class="hud-combo-container">
+      <div id="combo-badge" class="combo-badge hidden">
+        <span id="combo-count">2x</span> COMBO!
+      </div>
+      <div class="overdrive-bar-container">
+        <div class="overdrive-label">OVERDRIVE [Q]</div>
+        <div class="bar-outer">
+          <div id="overdrive-bar-fill" class="bar-fill overdrive-fill" style="width: 0%;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Controls & Status Bar -->
+    <div class="hud-bottom">
+      <!-- Vitals -->
+      <div class="vitals-container">
+        <!-- Shield -->
+        <div class="vital-row">
+          <span class="vital-label">ESCUDO</span>
+          <div class="bar-outer">
+            <div id="shield-bar-fill" class="bar-fill shield-fill" style="width: 100%;"></div>
+          </div>
+          <span id="shield-text" class="vital-text">100/100</span>
+        </div>
+        <!-- Health -->
+        <div class="vital-row">
+          <span class="vital-label">CASCO</span>
+          <div class="bar-outer">
+            <div id="health-bar-fill" class="bar-fill health-fill" style="width: 100%;"></div>
+          </div>
+          <span id="health-text" class="vital-text">100/100</span>
+        </div>
+      </div>
+
+      <!-- Active Weapon Selection -->
+      <div class="weapon-selector">
+        <div class="weapon-slot active" id="slot-1" data-weapon="plasma">
+          <span class="key">1</span>
+          <span class="name">PLASMA</span>
+        </div>
+        <div class="weapon-slot locked" id="slot-2" data-weapon="spread">
+          <span class="key">2</span>
+          <span class="name">SPREAD</span>
+        </div>
+        <div class="weapon-slot locked" id="slot-3" data-weapon="railgun">
+          <span class="key">3</span>
+          <span class="name">RAILGUN</span>
+        </div>
+        <div class="weapon-slot locked" id="slot-4" data-weapon="missile">
+          <span class="key">4</span>
+          <span class="name">MÍSSEIS</span>
+        </div>
+      </div>
+
+      <!-- Skills Cooldowns -->
+      <div class="skills-container">
+        <div class="skill-box" id="skill-dash">
+          <div class="skill-key">ESPAÇO</div>
+          <div class="skill-name">ESQUIVA</div>
+          <div id="dash-cd-overlay" class="cd-overlay" style="height: 0%;"></div>
+        </div>
+        <div class="skill-box" id="skill-emp">
+          <div class="skill-key">E</div>
+          <div class="skill-name">EMP</div>
+          <div id="emp-cd-overlay" class="cd-overlay" style="height: 0%;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- START MENU SCREEN -->
+  <div id="start-screen" class="modal-backdrop">
+    <div class="glass-card title-card">
+      <div class="logo-container">
+        <h1 class="glitch-title" data-text="CYBER PULSE">CYBER PULSE</h1>
+        <h2 class="sub-title">2099 // NEON VANGUARD</h2>
+      </div>
+
+      <p class="description">
+        Pilote a nave experimental Vanguard e defenda o setor contra enxames cibernéticos. Elimine invasores, colete Cyber Cores e evolua seu arsenal.
+      </p>
+
+      <!-- Controls Guide -->
+      <div class="controls-guide">
+        <div class="ctrl-item"><span class="badge">WASD / Setas</span> Mover Nave</div>
+        <div class="ctrl-item"><span class="badge">Mouse</span> Mirar & Atirar (Esq)</div>
+        <div class="ctrl-item"><span class="badge">ESPAÇO</span> Esquiva (Dash)</div>
+        <div class="ctrl-item"><span class="badge">E</span> Onda EMP</div>
+        <div class="ctrl-item"><span class="badge">Q</span> Modo Overdrive</div>
+        <div class="ctrl-item"><span class="badge">1 - 4</span> Trocar Arma</div>
+      </div>
+
+      <div class="high-score-display">
+        🏆 RECORDE MÁXIMO: <span id="start-high-score">0</span> PTS
+      </div>
+
+      <div class="action-buttons">
+        <button id="btn-start" class="btn btn-primary">INICIAR MISSÃO</button>
+        <button id="btn-audio-toggle" class="btn btn-secondary">🔊 ÁUDIO: LIGADO</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- UPGRADE SHOP MODAL (Between Waves) -->
+  <div id="shop-modal" class="modal-backdrop hidden">
+    <div class="glass-card shop-card">
+      <div class="shop-header">
+        <h2>CYBER SHOP // OFICINA VANGUARD</h2>
+        <p>Onda concluída! Invista seus Cyber Cores antes da próxima horda.</p>
+        <div class="shop-currency">SEUS CYBER CORES: <span id="shop-cores-count" class="glow-gold">💎 0</span></div>
+      </div>
+
+      <div class="shop-grid">
+        <!-- Upgrade Item: Damage -->
+        <div class="shop-item">
+          <div class="shop-item-icon">⚡</div>
+          <div class="shop-item-info">
+            <h3>Poder de Fogo</h3>
+            <p>Aumenta o dano de todas as armas (+20%).</p>
+            <div class="level-dots" id="dots-damage"></div>
+          </div>
+          <button class="btn-buy" id="buy-damage" data-cost="50">💎 50</button>
+        </div>
+
+        <!-- Upgrade Item: Fire Rate -->
+        <div class="shop-item">
+          <div class="shop-item-icon">🔥</div>
+          <div class="shop-item-info">
+            <h3>Cadência de Tiro</h3>
+            <p>Reduz o intervalo entre disparos (-15%).</p>
+            <div class="level-dots" id="dots-firerate"></div>
+          </div>
+          <button class="btn-buy" id="buy-firerate" data-cost="60">💎 60</button>
+        </div>
+
+        <!-- Upgrade Item: Shield Capacity -->
+        <div class="shop-item">
+          <div class="shop-item-icon">🛡️</div>
+          <div class="shop-item-info">
+            <h3>Capacidade de Escudo</h3>
+            <p>Aumenta o escudo máximo e regeneração (+25 HP).</p>
+            <div class="level-dots" id="dots-shield"></div>
+          </div>
+          <button class="btn-buy" id="buy-shield" data-cost="40">💎 40</button>
+        </div>
+
+        <!-- Upgrade Item: Engine Speed -->
+        <div class="shop-item">
+          <div class="shop-item-icon">🚀</div>
+          <div class="shop-item-info">
+            <h3>Propulsor Quântico</h3>
+            <p>Aumenta a velocidade de movimento da nave (+15%).</p>
+            <div class="level-dots" id="dots-speed"></div>
+          </div>
+          <button class="btn-buy" id="buy-speed" data-cost="35">💎 35</button>
+        </div>
+
+        <!-- Unlock Weapon: Spread Shot -->
+        <div class="shop-item">
+          <div class="shop-item-icon">💥</div>
+          <div class="shop-item-info">
+            <h3>Desbloquear Tiro Disperso</h3>
+            <p>Dispara múltiplos projéteis em leque.</p>
+          </div>
+          <button class="btn-buy" id="buy-unlock-spread" data-cost="100">💎 100</button>
+        </div>
+
+        <!-- Unlock Weapon: Railgun -->
+        <div class="shop-item">
+          <div class="shop-item-icon">🎯</div>
+          <div class="shop-item-info">
+            <h3>Desbloquear Railgun</h3>
+            <p>Feixe de laser de alta perfuração.</p>
+          </div>
+          <button class="btn-buy" id="buy-unlock-railgun" data-cost="150">💎 150</button>
+        </div>
+
+        <!-- Unlock Weapon: Missiles -->
+        <div class="shop-item">
+          <div class="shop-item-icon">🚀</div>
+          <div class="shop-item-info">
+            <h3>Mísseis Teleguiados</h3>
+            <p>Mísseis perseguidores de alto impacto.</p>
+          </div>
+          <button class="btn-buy" id="buy-unlock-missile" data-cost="200">💎 200</button>
+        </div>
+
+        <!-- Upgrade Companion Drone -->
+        <div class="shop-item">
+          <div class="shop-item-icon">🤖</div>
+          <div class="shop-item-info">
+            <h3>Drone Aliado</h3>
+            <p>Drone orbital que dispara automaticamente nos inimigos.</p>
+            <div class="level-dots" id="dots-drone"></div>
+          </div>
+          <button class="btn-buy" id="buy-drone" data-cost="120">💎 120</button>
+        </div>
+      </div>
+
+      <div class="shop-footer">
+        <button id="btn-next-wave" class="btn btn-primary btn-glow">PRÓXIMA ONDA ➔</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GAME OVER MODAL -->
+  <div id="game-over-screen" class="modal-backdrop hidden">
+    <div class="glass-card game-over-card">
+      <h1 class="glow-magenta-text">SISTEMA COMPROMETIDO</h1>
+      <h2 class="sub-title">SUA NAVE FOI DESTRUÍDA</h2>
+
+      <div class="stats-summary">
+        <div class="stat-row">
+          <span>PONTUAÇÃO FINAL:</span>
+          <strong id="go-score" class="glow-cyan">0</strong>
+        </div>
+        <div class="stat-row">
+          <span>ONDA ALCANÇADA:</span>
+          <strong id="go-wave" class="glow-magenta">1</strong>
+        </div>
+        <div class="stat-row">
+          <span>INIMIGOS ELIMINADOS:</span>
+          <strong id="go-kills">0</strong>
+        </div>
+        <div class="stat-row">
+          <span>CYBER CORES COLETADOS:</span>
+          <strong id="go-cores" class="glow-gold">0</strong>
+        </div>
+        <div class="stat-row">
+          <span>COMBO MÁXIMO:</span>
+          <strong id="go-combo">0x</strong>
+        </div>
+      </div>
+
+      <div id="new-high-score-msg" class="new-record hidden">
+        🎉 NOVO RECORDE ALCANÇADO! 🎉
+      </div>
+
+      <div class="action-buttons">
+        <button id="btn-restart" class="btn btn-primary btn-glow">TENTAR NOVAMENTE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAUSE MODAL -->
+  <div id="pause-screen" class="modal-backdrop hidden">
+    <div class="glass-card pause-card">
+      <h2>SISTEMA EM PAUSA</h2>
+      <div class="action-buttons vertical">
+        <button id="btn-resume" class="btn btn-primary">CONTINUAR</button>
+        <button id="btn-toggle-crt" class="btn btn-secondary">FILTRO CRT: LIGADO</button>
+        <button id="btn-quit" class="btn btn-danger">SAIR PARA O MENU</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/audio.js"></script>
+  <script src="js/particles.js"></script>
+  <script src="js/entities.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
